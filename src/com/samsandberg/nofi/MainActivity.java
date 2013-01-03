@@ -41,15 +41,9 @@ public class MainActivity extends Activity implements LocationListener {
         tvLocationUpdates.setText("");
         
         List<Hotspot> hotspots = new ArrayList<Hotspot>();
-        
-        // Home
-        hotspots.add(new Hotspot(40.734483, -74.001389));
-        
-        // 6th ave and west 10th
-        hotspots.add(new Hotspot(40.73479, -73.998718));
-        
-        // Work
-        hotspots.add(new Hotspot(40.738795, -73.993921));
+        hotspots.add(new Hotspot("Home", 40.734483, -74.001389));
+        hotspots.add(new Hotspot("6th ave and west 10th", 40.73479, -73.998718));
+        hotspots.add(new Hotspot("Work", 40.738795, -73.993921));
         
         myRadarView = new RadarView(this, hotspots);
     }
@@ -116,13 +110,11 @@ public class MainActivity extends Activity implements LocationListener {
 	public void onProviderEnabled(String provider) {
 		Log.d(TAG, "onProviderEnabled()");
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		Log.d(TAG, "onStatusChanged()");
 		// TODO Auto-generated method stub
-		
 	}
 }

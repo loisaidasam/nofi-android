@@ -2,23 +2,29 @@ package com.samsandberg.nofi;
 
 import java.util.List;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.location.Location;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
 
-public class RadarView extends View {
+public class RadarView extends View implements OnTouchListener {
 
 	protected final String TAG = "NoFi_RadarView";
+	
+	static final float DEFAULT_REAL_RADIUS_LENGTH = 10;
 	
 	private Context context;
 	private Location myLocation;
 	private List<Hotspot> hotspots;
 	private Paint mPaintGreen, mPaintRed;
-	private float width, height, gridRadius;
-	private double xMin, xMax, yMin, yMax, range;
+	private float width, height, gridRadius, realRadiusLength;
+	private float newBearing = -1;
+	
 
 	public RadarView(Context context, List<Hotspot> hotspots) {
 		super(context);
@@ -30,25 +36,8 @@ public class RadarView extends View {
         
         mPaintRed = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaintRed.setColor(Color.RED);
-	}
-	
-	private void prepMinMaxForLocation(Location location) {
-    	double lat = location.getLatitude();
-    	if (lat < xMin) {
-    		xMin = lat;
-    	}
-    	if (lat > xMax) {
-    		xMax = lat;
-    	}
-
-    	double lon = location.getLongitude();
-    	if (lon < yMin) {
-    		yMin = lon;
-    	}
-    	if (lon > yMax) {
-    		yMax = lon;
-    	}
-		
+        
+        setOnTouchListener(this);
 	}
 	
 	private void drawInit() {
@@ -59,42 +48,19 @@ public class RadarView extends View {
         float usableHeight = height * 0.9f;
         
         gridRadius = Math.min(usableWidth, usableHeight) / 2;
+        
+        realRadiusLength = DEFAULT_REAL_RADIUS_LENGTH;
+        for (Hotspot hotspot : hotspots) {
+        	float dist = myLocation.distanceTo(hotspot);
+        	if (dist > realRadiusLength) {
+        		realRadiusLength = dist;
+        	}
+        }
 
         //Log.d(TAG, "width=" + width + " usableWidth=" + usableWidth);
         //Log.d(TAG, "height=" + height + " usableHeight=" + usableHeight);
         //Log.d(TAG, "gridRadius=" + gridRadius);
-
-        xMin = Double.MAX_VALUE;
-        xMax = -1 * Double.MAX_VALUE;
-        yMin = Double.MAX_VALUE;
-        yMax = -1 * Double.MAX_VALUE;
-        
-        if (myLocation != null) {
-            prepMinMaxForLocation(myLocation);
-        }
-        for (Hotspot hotspot : hotspots) {
-        	prepMinMaxForLocation(hotspot);
-        }
-
-        //Log.d(TAG, "xMin=" + xMin + " xMax=" + xMax);
-        //Log.d(TAG, "yMin=" + yMin + " yMax=" + yMax);
-        
-        double xRange = Math.abs(xMax - xMin);
-        double yRange = Math.abs(yMax - yMin);
-        if (xRange > yRange) {
-        	range = xRange;
-        	double mid = yMin + yRange / 2;
-        	yMin = mid - (range/2);
-        	yMax = mid + (range/2);
-        } else {
-        	range = yRange;
-        	double mid = xMin + xRange / 2;
-        	xMin = mid - (range/2);
-        	xMax = mid + (range/2);
-        }
-
-        //Log.d(TAG, "xMin=" + xMin + " xMax=" + xMax);
-        //Log.d(TAG, "yMin=" + yMin + " yMax=" + yMax);
+        //Log.d(TAG, "realRadiusLength=" + realRadiusLength);
 	}
 	
 	private void drawAxes(Canvas canvas) {
@@ -103,48 +69,74 @@ public class RadarView extends View {
         canvas.drawLine(width/2, height/2 - gridRadius, width/2, height/2 + gridRadius, mPaintGreen);
 	}
 	
-	private FloatPoint convertLocationToFloatPoint(Location location) {
-		double lat = location.getLatitude();
-		double xDist = Math.abs(lat - xMin) / range;
-		float x = (width/2) - gridRadius + (float)(xDist * gridRadius);
-		
-		double lon = location.getLongitude();
-		double yDist = Math.abs(lon - yMin) / range;
-		float y = (height/2) - gridRadius + (float)(yDist * gridRadius);
-		
-		return new FloatPoint(x, y);
+	private void drawMe(Canvas canvas) {
+		//Log.d(TAG, "drawMe()");
+		canvas.drawCircle(width/2, height/2, Hotspot.DEFAULT_RADIUS_LENGTH, mPaintRed);
 	}
 	
 	private void drawHotspots(Canvas canvas) {
 		//Log.d(TAG, "drawHotspots()");
-
-		// Draw me...
-		if (myLocation != null) {
-			//Log.d(TAG, myLocation.toString());
-			FloatPoint floatPoint = convertLocationToFloatPoint(myLocation);
-			//Log.d(TAG, floatPoint.toString());
-			canvas.drawCircle(floatPoint.x, floatPoint.y, 10, mPaintRed);
-		}
 		
-		// Draw hotspots
 		for (Hotspot hotspot : hotspots) {
 			//Log.d(TAG, hotspot.toString());
-			FloatPoint floatPoint = convertLocationToFloatPoint(hotspot);
-			//Log.d(TAG, floatPoint.toString());
-			canvas.drawCircle(floatPoint.x, floatPoint.y, 10, mPaintGreen);
+			hotspot.prepareRelativeLocation(width, height, myLocation, gridRadius, realRadiusLength);
+			hotspot.draw(canvas);
 		}
+	}
+	
+	private void drawDirectionTriangle(Canvas canvas) {
+		//Log.d(TAG, "drawDirectionTriangle()");
+		// TODO: fill in this
 	}
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        
         drawInit();
+        
+        drawMe(canvas);
         drawAxes(canvas);
         drawHotspots(canvas);
+        
+        if (newBearing != -1) {
+        	drawDirectionTriangle(canvas);
+        }
     }
     
     public void updateMyLocation(Location location) {
+    	if (myLocation != null) {
+    		newBearing = myLocation.bearingTo(location);
+    	}
     	myLocation = location;
     	this.invalidate();
     }
+
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		//Log.d(TAG, "onTouch()");
+		if (event.getAction() != MotionEvent.ACTION_DOWN) {
+			return false;
+		}
+		//Log.d(TAG, "onTouch() action is DOWN!");
+
+		for (Hotspot hotspot: hotspots) {
+			if (hotspot.clickInsideCircle(event.getX(), event.getY())) {
+				AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+				alertDialogBuilder.setTitle(hotspot.ssid);
+				String message = "";
+				if (hotspot.passwordProtected) {
+					message += "Password: " + hotspot.password + "\n";
+				} else {
+					message += "Open (no password)\n";
+				}
+				message += "Distance: " + myLocation.distanceTo(hotspot) + "m\n";
+				alertDialogBuilder.setMessage(message);
+				AlertDialog alertDialog = alertDialogBuilder.create();
+				alertDialog.show();
+				return true;
+			}
+		}
+		return false;
+	}
 }
