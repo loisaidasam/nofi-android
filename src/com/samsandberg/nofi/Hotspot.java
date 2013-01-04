@@ -34,29 +34,6 @@ public class Hotspot extends Location {
 		passwordProtected = true;
 		this.password = password;
 	}
-
-	public void prepareRelativeLocation(float width, float height, Location myLocation, float gridRadius, float realRadiusLength) {
-		float bearing = myLocation.bearingTo(this);
-		float dist = myLocation.distanceTo(this);
-		dist = gridRadius * dist / realRadiusLength;
-		
-		if (bearing <= 90) {
-			x = width/2 + (float) Math.sin(bearing) * dist;
-			y = height/2 - (float) Math.cos(bearing) * dist;
-		} else if (bearing <= 180) {
-			bearing -= 90;
-			x = width/2 + (float) Math.cos(bearing) * dist;
-			y = height/2 + (float) Math.sin(bearing) * dist;
-		} else if (bearing <= 270) {
-			bearing -= 180;
-			x = width/2 - (float) Math.sin(bearing) * dist;
-			y = height/2 + (float) Math.cos(bearing) * dist;
-		} else {
-			bearing -= 270;
-			x = width/2 - (float) Math.cos(bearing) * dist;
-			y = height/2 - (float) Math.sin(bearing) * dist;
-		}
-	}
 	
 	public void draw(Canvas canvas) {
 		canvas.drawCircle(x, y, DEFAULT_RADIUS_LENGTH, mPaintGreen);

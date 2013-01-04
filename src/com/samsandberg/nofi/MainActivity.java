@@ -18,11 +18,12 @@ public class MainActivity extends Activity implements LocationListener {
 
 	protected final String TAG = "NoFi_MainActivity";
 	
-	static final int MIN_ACCURACY_REQUIRED_METERS = 500; //20;
+	static final int MIN_ACCURACY_REQUIRED_METERS = 20;
 	
 	private LocationManager locationManager;
 	private Location myLocation;
 	private RadarView myRadarView;
+	private int numUpdates;
 	
     /** Called when the activity is first created. */
     @Override
@@ -47,6 +48,8 @@ public class MainActivity extends Activity implements LocationListener {
         hotspots.add(new Hotspot("Work", 40.738795, -73.993921));
         
         myRadarView = new RadarView(this, hotspots);
+        
+        numUpdates = 0;
     }
     
     @Override
@@ -83,9 +86,11 @@ public class MainActivity extends Activity implements LocationListener {
 		Log.d(TAG, "onLocationChanged()");
 		Log.d(TAG, location.toString());
 		
+		numUpdates++;
+		
 		TextView tvLocationUpdates = (TextView) findViewById(R.id.tv_location_updates);
 		if (tvLocationUpdates != null) {
-			String locString = location.getLatitude() + ", " + location.getLongitude() + " (" + location.getAccuracy() + "m)";
+			String locString = "#" + numUpdates + " " + location.getLatitude() + ", " + location.getLongitude() + " (" + location.getAccuracy() + "m)";
 			String tvLocationUpdateStr = locString + "\n" + tvLocationUpdates.getText();
 			tvLocationUpdates.setText(tvLocationUpdateStr);
 		}
@@ -97,7 +102,11 @@ public class MainActivity extends Activity implements LocationListener {
 		
 		TextView tvAccuracy = (TextView) findViewById(R.id.tv_accuracy);
 		if (tvAccuracy != null) {
-			tvAccuracy.setText("Accuracy: " + location.getAccuracy() + "m");
+			String accuracyString = "Accuracy: " + location.getAccuracy() + "m";
+			if (location.getAccuracy() > MIN_ACCURACY_REQUIRED_METERS) {
+				accuracyString += " (" + MIN_ACCURACY_REQUIRED_METERS + "m required)";
+			}
+			tvAccuracy.setText(accuracyString);
 		}
 		
 		if (location.getAccuracy() > MIN_ACCURACY_REQUIRED_METERS) {
@@ -108,7 +117,7 @@ public class MainActivity extends Activity implements LocationListener {
 		if (myLocation == null) {
 			setContentView(R.layout.radar);
 			LinearLayout layout = (LinearLayout) findViewById(R.id.layout_container);
-			layout.addView(myRadarView, 2, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+			layout.addView(myRadarView, 3, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 		}
 		myLocation = location;
 		myRadarView.updateMyLocation(myLocation);
