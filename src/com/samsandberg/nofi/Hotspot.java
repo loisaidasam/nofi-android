@@ -64,7 +64,7 @@ public class Hotspot extends Location {
 	
 	public boolean clickInsideCircle(float clickX, float clickY) {
 		float dist = (float) Math.sqrt(Math.pow(clickX - x, 2) + Math.pow(clickY - y, 2));
-		Log.d(TAG, "Distance to hotspot " + ssid + ": " + dist);
+		//Log.d(TAG, "Distance to hotspot " + ssid + ": " + dist);
 		return (dist <= DEFAULT_RADIUS_LENGTH);
 	}
 }

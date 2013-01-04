@@ -2,6 +2,7 @@ package com.samsandberg.nofi;
 
 import java.util.List;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -11,12 +12,13 @@ import android.location.Location;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.widget.TextView;
 
 public class RadarView extends View implements OnTouchListener {
 
 	protected final String TAG = "NoFi_RadarView";
 	
-	static final float DEFAULT_REAL_RADIUS_LENGTH = 10;
+	static final float DEFAULT_REAL_RADIUS_LENGTH = 300;
 	
 	private Context context;
 	private Location myLocation;
@@ -50,11 +52,21 @@ public class RadarView extends View implements OnTouchListener {
         gridRadius = Math.min(usableWidth, usableHeight) / 2;
         
         realRadiusLength = DEFAULT_REAL_RADIUS_LENGTH;
+        /*
         for (Hotspot hotspot : hotspots) {
         	float dist = myLocation.distanceTo(hotspot);
         	if (dist > realRadiusLength) {
         		realRadiusLength = dist;
         	}
+        }
+        */
+
+        if (context instanceof Activity) {
+        	Activity activity = (Activity) context;
+    		TextView tvRadarGridRadius = (TextView) activity.findViewById(R.id.tv_radar_gridradius);
+    		if (tvRadarGridRadius != null) {
+    			tvRadarGridRadius.setText("Grid Radius Size: " + realRadiusLength + "m");
+    		}
         }
 
         //Log.d(TAG, "width=" + width + " usableWidth=" + usableWidth);
@@ -72,6 +84,36 @@ public class RadarView extends View implements OnTouchListener {
 	private void drawMe(Canvas canvas) {
 		//Log.d(TAG, "drawMe()");
 		canvas.drawCircle(width/2, height/2, Hotspot.DEFAULT_RADIUS_LENGTH, mPaintRed);
+	}
+	
+	private void drawNorth(Canvas canvas) {
+		//Log.d(TAG, "drawNorth()");
+		/*
+		Hotspot northPole = new Hotspot("North Pole", 90, 0);
+		float bearing = myLocation.bearingTo(northPole);
+		
+		float x, y;
+		if (bearing <= 90) {
+			x = width/2 + (float) Math.sin(bearing) * gridRadius;
+			y = height/2 - (float) Math.cos(bearing) * gridRadius;
+		} else if (bearing <= 180) {
+			bearing -= 90;
+			x = width/2 + (float) Math.cos(bearing) * gridRadius;
+			y = height/2 + (float) Math.sin(bearing) * gridRadius;
+		} else if (bearing <= 270) {
+			bearing -= 180;
+			x = width/2 - (float) Math.sin(bearing) * gridRadius;
+			y = height/2 + (float) Math.cos(bearing) * gridRadius;
+		} else {
+			bearing -= 270;
+			x = width/2 - (float) Math.cos(bearing) * gridRadius;
+			y = height/2 - (float) Math.sin(bearing) * gridRadius;
+		}
+		*/
+		float x = width/2;
+		float y = height/2 - gridRadius;
+		
+        canvas.drawLine(width/2, height/2, x, y, mPaintRed);
 	}
 	
 	private void drawHotspots(Canvas canvas) {
@@ -94,9 +136,10 @@ public class RadarView extends View implements OnTouchListener {
         super.onDraw(canvas);
         
         drawInit();
-        
-        drawMe(canvas);
+
         drawAxes(canvas);
+        //drawMe(canvas);
+        drawNorth(canvas);
         drawHotspots(canvas);
         
         if (newBearing != -1) {

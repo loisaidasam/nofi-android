@@ -10,6 +10,8 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class MainActivity extends Activity implements LocationListener {
@@ -17,8 +19,6 @@ public class MainActivity extends Activity implements LocationListener {
 	protected final String TAG = "NoFi_MainActivity";
 	
 	static final int MIN_ACCURACY_REQUIRED_METERS = 500; //20;
-
-	private TextView tvAccuracy, tvLocationUpdates;
 	
 	private LocationManager locationManager;
 	private Location myLocation;
@@ -34,15 +34,16 @@ public class MainActivity extends Activity implements LocationListener {
         // Acquire a reference to the system Location Manager
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         
-        tvAccuracy = (TextView) findViewById(R.id.tv_accuracy);
-        tvAccuracy.setText("Accuracy: N/A");
+        TextView tvAccuracy = (TextView) findViewById(R.id.tv_accuracy);
+        tvAccuracy.setText("Accuracy: None");
         
-        tvLocationUpdates = (TextView) findViewById(R.id.tv_location_updates);
-        tvLocationUpdates.setText("");
+        TextView tvLocationUpdates = (TextView) findViewById(R.id.tv_location_updates);
+        tvLocationUpdates.setText("Updates..");
         
         List<Hotspot> hotspots = new ArrayList<Hotspot>();
         hotspots.add(new Hotspot("Home", 40.734483, -74.001389));
         hotspots.add(new Hotspot("6th ave and west 10th", 40.73479, -73.998718));
+        hotspots.add(new Hotspot("7th Avenue South and Greenwich Avenue", 40.7366018, -74.0011397));
         hotspots.add(new Hotspot("Work", 40.738795, -73.993921));
         
         myRadarView = new RadarView(this, hotspots);
@@ -70,6 +71,11 @@ public class MainActivity extends Activity implements LocationListener {
         	locationManager.removeUpdates(this);
     	}
     	myLocation = null;
+
+		LinearLayout layout = (LinearLayout) findViewById(R.id.layout_container);
+		if (layout != null) {
+			layout.removeViewAt(2);
+		}
     }
 
 	@Override
@@ -77,16 +83,22 @@ public class MainActivity extends Activity implements LocationListener {
 		Log.d(TAG, "onLocationChanged()");
 		Log.d(TAG, location.toString());
 		
-		String tvLocationUpdateStr = location.toString() + "\n" + tvLocationUpdates.getText();
-		Log.d(TAG, tvLocationUpdateStr);
-		tvLocationUpdates.setText(tvLocationUpdateStr);
+		TextView tvLocationUpdates = (TextView) findViewById(R.id.tv_location_updates);
+		if (tvLocationUpdates != null) {
+			String locString = location.getLatitude() + ", " + location.getLongitude() + " (" + location.getAccuracy() + "m)";
+			String tvLocationUpdateStr = locString + "\n" + tvLocationUpdates.getText();
+			tvLocationUpdates.setText(tvLocationUpdateStr);
+		}
 		
 		if (! location.hasAccuracy()) {
 			Log.d(TAG, "No accuracy");
 			return;
 		}
 		
-		tvAccuracy.setText("Accuracy: " + location.getAccuracy() + "m");
+		TextView tvAccuracy = (TextView) findViewById(R.id.tv_accuracy);
+		if (tvAccuracy != null) {
+			tvAccuracy.setText("Accuracy: " + location.getAccuracy() + "m");
+		}
 		
 		if (location.getAccuracy() > MIN_ACCURACY_REQUIRED_METERS) {
 			Log.d(TAG, "Accuracy " + location.getAccuracy() + " > " + MIN_ACCURACY_REQUIRED_METERS);
@@ -94,10 +106,17 @@ public class MainActivity extends Activity implements LocationListener {
 		}
 		
 		if (myLocation == null) {
-	        setContentView(myRadarView);
+			setContentView(R.layout.radar);
+			LinearLayout layout = (LinearLayout) findViewById(R.id.layout_container);
+			layout.addView(myRadarView, 2, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 		}
 		myLocation = location;
 		myRadarView.updateMyLocation(myLocation);
+		
+		TextView tvRadarAccuracy = (TextView) findViewById(R.id.tv_radar_accuracy);
+		if (tvRadarAccuracy != null) {
+			tvRadarAccuracy.setText("Accuracy: " + location.getAccuracy() + "m");
+		}
 	}
 
 	@Override
