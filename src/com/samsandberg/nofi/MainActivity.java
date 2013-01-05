@@ -18,11 +18,12 @@ import android.widget.TextView;
 public class MainActivity extends Activity implements LocationListener {
 
 	protected final String TAG = "NoFi_MainActivity";
-	
+
 	static final int MIN_ACCURACY_REQUIRED_METERS = 20;
+	static final int MIN_DISTANCE_CHANGE_METERS = 0;
 	
 	private LocationManager locationManager;
-	private Location myLocation;
+	private Location myLocation, lastLocation;
 	private RadarView myRadarView;
 	private int numUpdates;
 	
@@ -45,9 +46,10 @@ public class MainActivity extends Activity implements LocationListener {
         tvLocationUpdates.setText("Updates..");
         
         List<Hotspot> hotspots = new ArrayList<Hotspot>();
-        hotspots.add(new Hotspot("Home", 40.734483, -74.001389));
+        hotspots.add(new Hotspot("Home", 40.734347,-74.001596));
         hotspots.add(new Hotspot("6th ave and west 10th", 40.73479, -73.998718));
-        hotspots.add(new Hotspot("7th Avenue South and Greenwich Avenue", 40.7366018, -74.0011397));
+        hotspots.add(new Hotspot("7th Avenue South and Greenwich Avenue", 40.736602, -74.00114));
+        hotspots.add(new Hotspot("7th Avenue South and West 10th", 40.73434, -74.002391));
         hotspots.add(new Hotspot("Work", 40.738795, -73.993921));
         
         myRadarView = new RadarView(this, hotspots);
@@ -62,8 +64,8 @@ public class MainActivity extends Activity implements LocationListener {
     	
         setContentView(R.layout.main);
         
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, MIN_DISTANCE_CHANGE_METERS, this);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, MIN_DISTANCE_CHANGE_METERS, this);
     }
     
     @Override

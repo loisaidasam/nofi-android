@@ -10,6 +10,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.location.Location;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -26,7 +27,7 @@ public class RadarView extends View implements OnTouchListener {
 	private List<Location> myLocations;
 	private List<Hotspot> hotspots;
 	private Paint mPaintGreen, mPaintRed, mPaintYellow;
-	private float width, height, gridRadius, realRadiusLength;
+	private float width, height, radiusPixels, radiusMeters, myBearing;
 	
 
 	public RadarView(Context context, List<Hotspot> hotspots) {
@@ -46,6 +47,7 @@ public class RadarView extends View implements OnTouchListener {
         setOnTouchListener(this);
         
         myLocations = new ArrayList<Location>();
+        myBearing = 0;
 	}
 	
 	private void drawInit() {
@@ -55,14 +57,14 @@ public class RadarView extends View implements OnTouchListener {
         float usableWidth = width * 0.9f;
         float usableHeight = height * 0.9f;
         
-        gridRadius = Math.min(usableWidth, usableHeight) / 2;
+        radiusPixels = Math.min(usableWidth, usableHeight) / 2;
         
-        realRadiusLength = DEFAULT_REAL_RADIUS_LENGTH;
-        /*
+        radiusMeters = DEFAULT_REAL_RADIUS_LENGTH;
+        /* Or do it dynamically:
         for (Hotspot hotspot : hotspots) {
         	float dist = myLocation.distanceTo(hotspot);
-        	if (dist > realRadiusLength) {
-        		realRadiusLength = dist;
+        	if (dist > radiusMeters) {
+        		radiusMeters = dist;
         	}
         }
         */
@@ -77,38 +79,47 @@ public class RadarView extends View implements OnTouchListener {
         	
     		TextView tvRadarGridRadius = (TextView) activity.findViewById(R.id.tv_radar_gridradius);
     		if (tvRadarGridRadius != null) {
-    			tvRadarGridRadius.setText("Grid Radius Size: " + realRadiusLength + "m");
+    			tvRadarGridRadius.setText("Grid Radius Size: " + radiusMeters + "m");
     		}
         }
 
         //Log.d(TAG, "width=" + width + " usableWidth=" + usableWidth);
         //Log.d(TAG, "height=" + height + " usableHeight=" + usableHeight);
-        //Log.d(TAG, "gridRadius=" + gridRadius);
-        //Log.d(TAG, "realRadiusLength=" + realRadiusLength);
+        //Log.d(TAG, "radiusPixels=" + radiusPixels);
+        //Log.d(TAG, "radiusMeters=" + radiusMeters);
 	}
 
 	private FloatPoint prepareRelativeLocation(Location fromLocation, Location toLocation) {
 		float bearing = fromLocation.bearingTo(toLocation);
+		bearing -= myBearing;
+		if (bearing < 0) {
+			bearing += 360;
+		}
+		
 		float dist = fromLocation.distanceTo(toLocation);
-		dist = gridRadius * dist / realRadiusLength;
+		dist = radiusPixels * dist / radiusMeters;
 		
 		float x, y;
 		
 		if (bearing <= 90) {
-			x = width/2 + (float) Math.sin(bearing) * dist;
-			y = height/2 - (float) Math.cos(bearing) * dist;
+			double bearingRadians = Math.toRadians(bearing);
+			x = width/2 + (float) Math.sin(bearingRadians) * dist;
+			y = height/2 - ((float) Math.cos(bearingRadians) * dist);
 		} else if (bearing <= 180) {
 			bearing -= 90;
-			x = width/2 + (float) Math.cos(bearing) * dist;
-			y = height/2 + (float) Math.sin(bearing) * dist;
+			double bearingRadians = Math.toRadians(bearing);
+			x = width/2 + (float) Math.cos(bearingRadians) * dist;
+			y = height/2 + (float) Math.sin(bearingRadians) * dist;
 		} else if (bearing <= 270) {
 			bearing -= 180;
-			x = width/2 - (float) Math.sin(bearing) * dist;
-			y = height/2 + (float) Math.cos(bearing) * dist;
+			double bearingRadians = Math.toRadians(bearing);
+			x = width/2 - (float) Math.sin(bearingRadians) * dist;
+			y = height/2 + (float) Math.cos(bearingRadians) * dist;
 		} else {
 			bearing -= 270;
-			x = width/2 - (float) Math.cos(bearing) * dist;
-			y = height/2 - (float) Math.sin(bearing) * dist;
+			double bearingRadians = Math.toRadians(bearing);
+			x = width/2 - (float) Math.cos(bearingRadians) * dist;
+			y = height/2 - (float) Math.sin(bearingRadians) * dist;
 		}
 		
 		return new FloatPoint(x, y);
@@ -116,8 +127,8 @@ public class RadarView extends View implements OnTouchListener {
 	
 	private void drawAxes(Canvas canvas) {
 		//Log.d(TAG, "drawAxes()");
-        canvas.drawLine(width/2 - gridRadius, height/2, width/2 + gridRadius, height/2, mPaintGreen);
-        canvas.drawLine(width/2, height/2 - gridRadius, width/2, height/2 + gridRadius, mPaintGreen);
+        canvas.drawLine(width/2 - radiusPixels, height/2, width/2 + radiusPixels, height/2, mPaintGreen);
+        canvas.drawLine(width/2, height/2 - radiusPixels, width/2, height/2 + radiusPixels, mPaintGreen);
 	}
 	
 	private void drawMyPath(Canvas canvas) {
@@ -141,16 +152,17 @@ public class RadarView extends View implements OnTouchListener {
 	private void drawNorth(Canvas canvas) {
 		//Log.d(TAG, "drawNorth()");
 		
-		/*
+		// Use real north pole?
 		Hotspot northPole = new Hotspot("North Pole", 90, 0);
-		FloatPoint northPolePoint = prepareRelativeLocation(myLocation, hotspot);
+		FloatPoint northPolePoint = prepareRelativeLocation(myLocation, northPole);
 		float x = northPolePoint.x;
 		float y = northPolePoint.y;
-		*/
 		
-		// For now, true north is always up!
+		/*
+		// Or true north is always up!
 		float x = width/2;
-		float y = height/2 - gridRadius;
+		float y = height/2 - radiusPixels;
+		*/
 		
         canvas.drawLine(width/2, height/2, x, y, mPaintRed);
 	}
@@ -190,6 +202,12 @@ public class RadarView extends View implements OnTouchListener {
     }
     
     public void updateMyLocation(Location location) {
+    	if (myLocation != null) {
+    		myBearing = myLocation.bearingTo(location);
+    		if (myBearing < 0) {
+    			myBearing += 360;
+    		}
+    	}
     	myLocation = location;
     	myLocations.add(location);
     	this.invalidate();
@@ -213,6 +231,13 @@ public class RadarView extends View implements OnTouchListener {
 				} else {
 					message += "Open (no password)\n";
 				}
+				
+				float bearing = myLocation.bearingTo(hotspot);
+				bearing -= myBearing;
+				if (bearing < 0) {
+					bearing += 360;
+				}
+				message += "Bearing: " + bearing + " degrees\n";
 				message += "Distance: " + myLocation.distanceTo(hotspot) + "m\n";
 				alertDialogBuilder.setMessage(message);
 				AlertDialog alertDialog = alertDialogBuilder.create();
