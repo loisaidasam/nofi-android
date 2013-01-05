@@ -3,7 +3,7 @@ package com.samsandberg.nofi;
 import android.content.Context;
 import android.view.View;
 
-class DirectionTriangleView extends View {
+public class DirectionTriangleView extends View {
 
 	/*
 	 * http://developer.android.com/reference/android/view/View.html#setRotationX(float)

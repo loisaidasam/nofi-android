@@ -5,9 +5,11 @@ import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
@@ -24,6 +26,9 @@ public class MainActivity extends Activity implements LocationListener {
 	
 	private LocationManager locationManager;
 	private Location myLocation, lastLocation;
+
+    private NetworkReceiver receiver = new NetworkReceiver();
+	
 	private RadarView myRadarView;
 	private int numUpdates;
 	
@@ -38,6 +43,11 @@ public class MainActivity extends Activity implements LocationListener {
         
         // Acquire a reference to the system Location Manager
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        // Registers BroadcastReceiver to track network connection changes.
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        receiver = new NetworkReceiver();
+        this.registerReceiver(receiver, filter);
         
         TextView tvAccuracy = (TextView) findViewById(R.id.tv_accuracy);
         tvAccuracy.setText("Accuracy: None");
@@ -85,6 +95,15 @@ public class MainActivity extends Activity implements LocationListener {
 		if (layout != null) {
 			layout.removeViewAt(2);
 		}
+    }
+    
+    @Override 
+    public void onDestroy() {
+        super.onDestroy();
+        // Unregister BroadcastReceiver when app is destroyed.
+        if (receiver != null) {
+            this.unregisterReceiver(receiver);
+        }
     }
 
 	@Override
