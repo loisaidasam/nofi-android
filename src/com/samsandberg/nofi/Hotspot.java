@@ -21,11 +21,12 @@ public class Hotspot extends Location {
 	public Hotspot(String ssid, double latitude, double longitude) {
 		super("foo");
 		this.ssid = ssid;
+		this.password = "";
+		this.passwordProtected = false;
+		
 		this.setLatitude(latitude);
 		this.setLongitude(longitude);
 		
-		passwordProtected = false;
-
         mPaintGreen = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaintGreen.setColor(Color.GREEN);
 	}

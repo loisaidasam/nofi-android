@@ -144,10 +144,12 @@ public class RadarView extends View implements OnTouchListener {
 		}
 	}
 	
+	/* TODO: do we really need to draw ourselves?
 	private void drawMe(Canvas canvas) {
 		//Log.d(TAG, "drawMe()");
 		canvas.drawCircle(width/2, height/2, Hotspot.DEFAULT_RADIUS_LENGTH, mPaintRed);
 	}
+	*/
 	
 	private void drawNorth(Canvas canvas) {
 		//Log.d(TAG, "drawNorth()");
@@ -172,6 +174,7 @@ public class RadarView extends View implements OnTouchListener {
 		
 		for (Hotspot hotspot : hotspots) {
 			//Log.d(TAG, hotspot.toString());
+			
 			FloatPoint relativeLocation = prepareRelativeLocation(myLocation, hotspot);
 			hotspot.x = relativeLocation.x;
 			hotspot.y = relativeLocation.y;
@@ -231,14 +234,13 @@ public class RadarView extends View implements OnTouchListener {
 				} else {
 					message += "Open (no password)\n";
 				}
-				
+				message += "Distance: " + myLocation.distanceTo(hotspot) + "m\n";
 				float bearing = myLocation.bearingTo(hotspot);
 				bearing -= myBearing;
 				if (bearing < 0) {
 					bearing += 360;
 				}
 				message += "Bearing: " + bearing + " degrees\n";
-				message += "Distance: " + myLocation.distanceTo(hotspot) + "m\n";
 				alertDialogBuilder.setMessage(message);
 				AlertDialog alertDialog = alertDialogBuilder.create();
 				alertDialog.show();

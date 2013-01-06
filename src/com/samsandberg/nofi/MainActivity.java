@@ -10,12 +10,14 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends Activity implements LocationListener {
 
@@ -23,11 +25,16 @@ public class MainActivity extends Activity implements LocationListener {
 
 	static final int MIN_ACCURACY_REQUIRED_METERS = 20;
 	static final int MIN_DISTANCE_CHANGE_METERS = 0;
+	static final int MIN_DISTANCE_SCAN = 50;
+	static final int MAX_SCAN_FREQUENCY_SECONDS = 30;
 	
 	private LocationManager locationManager;
-	private Location myLocation, lastLocation;
-
-    private NetworkReceiver receiver = new NetworkReceiver();
+	private Location myLocation;
+	
+	private List<Hotspot> hotspots;
+	
+    private NetworkReceiver networkReceiver;
+    private long lastWifiScan;
 	
 	private RadarView myRadarView;
 	private int numUpdates;
@@ -37,7 +44,6 @@ public class MainActivity extends Activity implements LocationListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate()");
-        setContentView(R.layout.main);
         
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
@@ -46,33 +52,36 @@ public class MainActivity extends Activity implements LocationListener {
 
         // Registers BroadcastReceiver to track network connection changes.
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-        receiver = new NetworkReceiver();
-        this.registerReceiver(receiver, filter);
-        
-        TextView tvAccuracy = (TextView) findViewById(R.id.tv_accuracy);
-        tvAccuracy.setText("Accuracy: None");
-        
-        TextView tvLocationUpdates = (TextView) findViewById(R.id.tv_location_updates);
-        tvLocationUpdates.setText("Updates..");
-        
-        List<Hotspot> hotspots = new ArrayList<Hotspot>();
-        hotspots.add(new Hotspot("Home", 40.734347,-74.001596));
-        hotspots.add(new Hotspot("6th ave and west 10th", 40.73479, -73.998718));
-        hotspots.add(new Hotspot("7th Avenue South and Greenwich Avenue", 40.736602, -74.00114));
-        hotspots.add(new Hotspot("7th Avenue South and West 10th", 40.73434, -74.002391));
-        hotspots.add(new Hotspot("Work", 40.738795, -73.993921));
-        
-        myRadarView = new RadarView(this, hotspots);
-        
-        numUpdates = 0;
+        // And to track scan results updates
+        filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+        networkReceiver = new NetworkReceiver(this);
+        registerReceiver(networkReceiver, filter);
     }
     
     @Override
     public void onResume() {
     	super.onResume();
 		Log.d(TAG, "onResume()");
-    	
+
+        // Loader screen for while we wait for a close location
         setContentView(R.layout.main);
+        
+        TextView tvAccuracy = (TextView) findViewById(R.id.tv_accuracy);
+        tvAccuracy.setText("Accuracy: None");
+        
+        TextView tvLocationUpdates = (TextView) findViewById(R.id.tv_location_updates);
+        tvLocationUpdates.setText("Updates...");
+
+        // Sanity check that wifi is enabled, otherwise what's the point?
+        WifiManager wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        if (! wifi.isWifiEnabled()) {
+            Toast.makeText(this, "Your WiFi is disabled! Enabling it now...", Toast.LENGTH_LONG).show();
+            wifi.setWifiEnabled(true);
+        }
+        networkReceiver.updateMyWifis();
+
+        numUpdates = 0;
+        lastWifiScan = 0;
         
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, MIN_DISTANCE_CHANGE_METERS, this);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, MIN_DISTANCE_CHANGE_METERS, this);
@@ -95,21 +104,24 @@ public class MainActivity extends Activity implements LocationListener {
 		if (layout != null) {
 			layout.removeViewAt(2);
 		}
+
+		networkReceiver.readyForUpdates = false;
+		networkReceiver.askingToConnect = false;
     }
     
     @Override 
     public void onDestroy() {
         super.onDestroy();
         // Unregister BroadcastReceiver when app is destroyed.
-        if (receiver != null) {
-            this.unregisterReceiver(receiver);
+        if (networkReceiver != null) {
+            this.unregisterReceiver(networkReceiver);
         }
     }
 
 	@Override
 	public void onLocationChanged(Location location) {
-		Log.d(TAG, "onLocationChanged()");
-		Log.d(TAG, location.toString());
+		//Log.d(TAG, "onLocationChanged()");
+		//Log.d(TAG, location.toString());
 		
 		numUpdates++;
 		
@@ -140,9 +152,32 @@ public class MainActivity extends Activity implements LocationListener {
 		}
 		
 		if (myLocation == null) {
+	        // TODO: make a loader screen for while hotspots load
+	        //setContentView(R.layout.?);
+	        
+			// TODO: load hotspots from a DB, riiiiight!?
+	        hotspots = new ArrayList<Hotspot>();
+	        hotspots.add(new Hotspot("6th ave and west 10th", 40.73479, -73.998718));
+	        hotspots.add(new Hotspot("7th Avenue South and Greenwich Avenue", 40.736602, -74.00114));
+	        hotspots.add(new Hotspot("7th Avenue South and West 10th", 40.73434, -74.002391));
+	         
+	        Hotspot zemanta = new Hotspot("Work", 40.738795, -73.993921);
+	        zemanta.setPassword("modernship910");
+	        hotspots.add(zemanta);
+	        
+	        Hotspot home = new Hotspot("Komenskega Ulica", 40.734347,-74.001596);
+	        home.setPassword("tacotuesday");
+	        hotspots.add(home);
+	        
+	        networkReceiver.updateHotspots(hotspots);
+	        
+	        myRadarView = new RadarView(this, hotspots);
+	        
 			setContentView(R.layout.radar);
 			LinearLayout layout = (LinearLayout) findViewById(R.id.layout_container);
 			layout.addView(myRadarView, 3, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+			
+			networkReceiver.readyForUpdates = true;
 		}
 		myLocation = location;
 		myRadarView.updateMyLocation(myLocation);
@@ -150,6 +185,19 @@ public class MainActivity extends Activity implements LocationListener {
 		TextView tvRadarAccuracy = (TextView) findViewById(R.id.tv_radar_accuracy);
 		if (tvRadarAccuracy != null) {
 			tvRadarAccuracy.setText("Accuracy: " + location.getAccuracy() + "m");
+		}
+		
+		if (lastWifiScan + (MAX_SCAN_FREQUENCY_SECONDS * 1000) < System.currentTimeMillis()) {
+			// Set this first (because location could change in between now and 
+			// the amount of time it takes to iterate through all the hotspots)
+			lastWifiScan = System.currentTimeMillis();
+			for (Hotspot hotspot : hotspots) {
+				if (myLocation.distanceTo(hotspot) < MIN_DISTANCE_SCAN) {
+					Log.d(TAG, "Distance to hotspot \"" + hotspot.ssid + "\" < " + MIN_DISTANCE_SCAN + "m - triggering WiFi scan...");
+					WifiUtil.triggerWifiScan(this);
+					break;
+				}
+			}
 		}
 	}
 
