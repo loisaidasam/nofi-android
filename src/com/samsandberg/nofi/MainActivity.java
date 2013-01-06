@@ -28,10 +28,11 @@ public class MainActivity extends Activity implements LocationListener {
 	static final int MIN_DISTANCE_SCAN = 50;
 	static final int MAX_SCAN_FREQUENCY_SECONDS = 30;
 	
+	private DatabaseHelper databaseHelper;
+	private List<Hotspot> hotspots;
+	
 	private LocationManager locationManager;
 	private Location myLocation;
-	
-	private List<Hotspot> hotspots;
 	
     private NetworkReceiver networkReceiver;
     private long lastWifiScan;
@@ -46,6 +47,11 @@ public class MainActivity extends Activity implements LocationListener {
 		Log.d(TAG, "onCreate()");
         
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        
+        databaseHelper = new DatabaseHelper(this);
+        
+        // TODO: this is temporary - start building a real DB soon!
+        databaseHelper.insertSampleData();
         
         // Acquire a reference to the system Location Manager
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -155,22 +161,8 @@ public class MainActivity extends Activity implements LocationListener {
 	        // TODO: make a loader screen for while hotspots load
 	        //setContentView(R.layout.?);
 	        
-			// TODO: load hotspots from a DB, riiiiight!?
-	        hotspots = new ArrayList<Hotspot>();
-	        hotspots.add(new Hotspot("6th ave and west 10th", 40.73479, -73.998718));
-	        hotspots.add(new Hotspot("7th Avenue South and Greenwich Avenue", 40.736602, -74.00114));
-	        hotspots.add(new Hotspot("7th Avenue South and West 10th", 40.73434, -74.002391));
-	         
-	        Hotspot zemanta = new Hotspot("Work", 40.738795, -73.993921);
-	        zemanta.setPassword("modernship910");
-	        hotspots.add(zemanta);
-	        
-	        Hotspot home = new Hotspot("Komenskega Ulica", 40.734347,-74.001596);
-	        home.setPassword("tacotuesday");
-	        hotspots.add(home);
-	        
+			hotspots = databaseHelper.getAllHotspots();
 	        networkReceiver.updateHotspots(hotspots);
-	        
 	        myRadarView = new RadarView(this, hotspots);
 	        
 			setContentView(R.layout.radar);

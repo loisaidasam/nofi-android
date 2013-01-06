@@ -12,20 +12,25 @@ public class Hotspot extends Location {
 	
 	static final float DEFAULT_RADIUS_LENGTH = 30;
 	
-	public String ssid, password, macAddress;
+	public String ssid, password, macAddress, foursquareId, foursquareName, foursquareType;
 	public boolean passwordProtected;
 	public float x, y;
 	
 	protected Paint mPaintGreen;
 	
-	public Hotspot(String ssid, double latitude, double longitude) {
+	public Hotspot(String ssid, String macAddress, double latitude, double longitude) {
 		super("foo");
 		this.ssid = ssid;
-		this.password = "";
-		this.passwordProtected = false;
-		
+		this.macAddress = macAddress;
 		this.setLatitude(latitude);
 		this.setLongitude(longitude);
+		
+		this.password = "";
+		this.passwordProtected = false;
+
+		this.foursquareId = "";
+		this.foursquareName = "";
+		this.foursquareType = "";
 		
         mPaintGreen = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaintGreen.setColor(Color.GREEN);
@@ -34,6 +39,12 @@ public class Hotspot extends Location {
 	public void setPassword(String password) {
 		passwordProtected = true;
 		this.password = password;
+	}
+	
+	public void setFoursquareInfo(String foursquareId, String foursquareName, String foursquareType) {
+		this.foursquareId = foursquareId;
+		this.foursquareName = foursquareName;
+		this.foursquareType = foursquareType;
 	}
 	
 	public void draw(Canvas canvas) {

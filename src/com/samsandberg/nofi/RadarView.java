@@ -155,7 +155,7 @@ public class RadarView extends View implements OnTouchListener {
 		//Log.d(TAG, "drawNorth()");
 		
 		// Use real north pole?
-		Hotspot northPole = new Hotspot("North Pole", 90, 0);
+		Hotspot northPole = new Hotspot("North Pole", "", 90, 0);
 		FloatPoint northPolePoint = prepareRelativeLocation(myLocation, northPole);
 		float x = northPolePoint.x;
 		float y = northPolePoint.y;
