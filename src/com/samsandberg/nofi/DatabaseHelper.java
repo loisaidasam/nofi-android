@@ -9,8 +9,11 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.location.Location;
+import android.util.Log;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
+
+	private final String TAG = "NoFi_DatabaseHelper";
 	
 	// All Static variables
 	// Database Version
@@ -18,9 +21,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
  
 	private static final String DATABASE_NAME = "nofi";
 
-	private static final int SHARE_LEVEL_PUBLIC = 0;
-	private static final int SHARE_LEVEL_FRIENDS = 1; // TODO
-	private static final int SHARE_LEVEL_PRIVATE = 2;
+	public static final int SHARE_LEVEL_PUBLIC = 0;
+	public static final int SHARE_LEVEL_FRIENDS = 1; // TODO
+	public static final int SHARE_LEVEL_PRIVATE = 2;
 	
 	private static final String TABLE_HOTSPOTS = "hotspots";
 	private static final String KEY_ID = "id";
@@ -93,18 +96,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		
 		// TODO: figure out why we're resetting... 
 		// Wouldn't we want to modify the schema or do something else more clever instead?
-		resetDatabase(db);
+		resetDatabase();
 	}
 	
-	public void resetDatabase(SQLiteDatabase db) {
+	public void resetDatabase() {
+		SQLiteDatabase db = getWriteableDB();
+		
 		// Drop older table if existed
 		db.execSQL("DROP TABLE IF EXISTS " + TABLE_HOTSPOTS);
- 
+
 		// Create tables again
 		onCreate(db);
 	}
 	
-	public void addHotspot(Hotspot hotspot, long lastConnected, int shareLevel) {
+	private ContentValues getContentValuesFromData(Hotspot hotspot, long lastConnected, int shareLevel) {
 		ContentValues values = new ContentValues();
 		values.put(KEY_SSID, hotspot.ssid);
 		if (hotspot.passwordProtected) {
@@ -123,7 +128,45 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		values.put(KEY_LAST_CONNECTED, lastConnected);
 		values.put(KEY_SHARE_LEVEL, shareLevel);
 		values.put(KEY_UPLOADED, 0);
+		
+		return values;
+	}
+	
+	public void updateHotspot(Hotspot hotspot, long lastConnected, int shareLevel) {
+		Log.d(TAG, "updateHotspot()");
+		
+		int hotspotId = getHotspotIdBySSIDAndMacAddress(hotspot.ssid, hotspot.macAddress);
+		Log.d(TAG, "hotspotId=" + hotspotId);
+		
+		SQLiteDatabase db = getWriteableDB();
+		ContentValues values = getContentValuesFromData(hotspot, lastConnected, shareLevel);
+		
+		// Insert
+		if (hotspotId == 0) {
+			db.insert(TABLE_HOTSPOTS, null, values);
+			return;
+		}
+		
+		// Update
+		db.update(TABLE_HOTSPOTS, values, KEY_ID + " = ?", new String[] {String.valueOf(hotspotId)});
+	}
+	
+	public void addHotspot(Hotspot hotspot, long lastConnected, int shareLevel) {
+		ContentValues values = getContentValuesFromData(hotspot, lastConnected, shareLevel);
 		getWriteableDB().insert(TABLE_HOTSPOTS, null, values);
+	}
+	
+	private int getHotspotIdBySSIDAndMacAddress(String ssid, String macAddress) {
+		String query = "SELECT " + KEY_ID + " FROM " + TABLE_HOTSPOTS + " " +
+			"WHERE " + KEY_SSID + " = ? AND " + KEY_MAC_ADDRESS + " = ?";
+		String[] selectionArgs = new String[] {ssid, macAddress};
+		Cursor cursor = getReadableDB().rawQuery(query, selectionArgs);
+		
+		if (cursor == null || ! cursor.moveToFirst()) {
+			return 0;
+		}
+		
+		return cursor.getInt(0);
 	}
 	
 	private Hotspot getHotspotFromCursor(Cursor cursor) {
@@ -133,6 +176,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 			hotspot.setPassword(cursor.getString(2));
 		}
 		return hotspot;
+	}
+	
+	public Hotspot getHotspotBySSIDAndMacAddress(String ssid, String macAddress) {
+		String query = "SELECT * FROM " + TABLE_HOTSPOTS + " " +
+			"WHERE " + KEY_SSID + " = ? AND " + KEY_MAC_ADDRESS + " = ?";
+		String[] selectionArgs = new String[] {ssid, macAddress};
+		Cursor cursor = getReadableDB().rawQuery(query, selectionArgs);
+		
+		if (cursor == null || ! cursor.moveToFirst()) {
+			return null;
+		}
+		
+		return getHotspotFromCursor(cursor);
 	}
 	
 	public List<Hotspot> getHotspotsByLocation(Location location, int maxDistance) {
@@ -189,7 +245,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	}
 	
 	public void insertSampleData() {
-		resetDatabase(getWriteableDB());
+		resetDatabase();
 
         List<Hotspot> hotspots = new ArrayList<Hotspot>();
         hotspots.add(new Hotspot("6th ave and west 10th", "", 40.73479, -73.998718));

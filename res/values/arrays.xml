@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="wifiadd_password_protected_choices">
+        <item>No (Open)</item>
+        <item>Yes</item>
+    </string-array>
+</resources>

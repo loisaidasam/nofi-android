@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <string name="hello">Looking for your location..</string>
     <string name="app_name">NoFi</string>
+    
+    <string name="hello">Looking for your location..</string>
+    
+    <string name="wifiadd_general">Add/Update a Hotspot:</string>
+    <string name="wifiadd_ssid">SSID:</string>
+    <string name="wifiadd_mac_address">MAC Address:</string>
+    <string name="wifiadd_password_protected">Password Protected:</string>
+    <string name="wifiadd_password">Password:</string>
+    <string name="wifiadd_button_tv">Looking for your location</string>
+    <string name="wifiadd_button">Add/Update!</string>
 
 </resources>

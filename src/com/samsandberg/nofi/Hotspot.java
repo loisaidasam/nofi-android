@@ -56,4 +56,14 @@ public class Hotspot extends Location {
 		//Log.d(TAG, "Distance to hotspot " + ssid + ": " + dist);
 		return (dist <= DEFAULT_RADIUS_LENGTH);
 	}
+	
+	public String toString() {
+		String result = "ssid=" + ssid + 
+			" macAddress=" + macAddress + 
+			" passwordProtected=" + String.valueOf(passwordProtected) +
+			" password=" + password +
+			" lat=" + getLatitude() +
+			" lon=" + getLongitude();
+		return result;
+	}
 }

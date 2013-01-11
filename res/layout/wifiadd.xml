@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifiadd_general" 
+    />
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifiadd_ssid" 
+    />
+    <EditText
+        android:id="@+id/wifiadd_ssid"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="" 
+    />
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifiadd_mac_address" 
+    />
+    <EditText
+        android:id="@+id/wifiadd_mac_address"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="" 
+    />
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifiadd_password_protected" 
+    />
+    <Spinner
+        android:id="@+id/wifiadd_password_protected"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+    />
+
+    <TextView
+        android:id="@+id/wifiadd_password_tv"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifiadd_password"
+        android:visibility="gone" 
+    />
+    <EditText
+        android:id="@+id/wifiadd_password"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="" 
+        android:inputType="text"
+        android:visibility="gone"
+    />
+    
+    <TextView
+        android:id="@+id/wifiadd_button_tv"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/wifiadd_button_tv"
+    />
+    <Button android:id="@+id/wifiadd_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/wifiadd_button"
+        android:clickable="false"
+    />
+
+</LinearLayout>

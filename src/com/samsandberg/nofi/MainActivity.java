@@ -1,6 +1,5 @@
 package com.samsandberg.nofi;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
@@ -23,10 +22,11 @@ public class MainActivity extends Activity implements LocationListener {
 
 	protected final String TAG = "NoFi_MainActivity";
 
-	static final int MIN_ACCURACY_REQUIRED_METERS = 20;
-	static final int MIN_DISTANCE_CHANGE_METERS = 0;
-	static final int MIN_DISTANCE_SCAN = 50;
-	static final int MAX_SCAN_FREQUENCY_SECONDS = 30;
+	public static final int MIN_ACCURACY_REQUIRED_METERS = 50;
+	public static final int MIN_DISTANCE_CHANGE_METERS = 0;
+	public static final int MIN_DISTANCE_SCAN = 50;
+	public static final int MAX_SCAN_FREQUENCY_SECONDS = 30;
+	public static final int MAX_DB_HOTSPOT_DISTANCE = 1000;
 	
 	private DatabaseHelper databaseHelper;
 	private List<Hotspot> hotspots;
@@ -50,13 +50,10 @@ public class MainActivity extends Activity implements LocationListener {
         
         databaseHelper = new DatabaseHelper(this);
         
-        // TODO: this is temporary - start building a real DB soon!
-        databaseHelper.insertSampleData();
-        
         // Acquire a reference to the system Location Manager
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        // Registers BroadcastReceiver to track network connection changes.
+        // Register BroadcastReceiver to track wifi connections
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         // And to track scan results updates
         filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
@@ -78,8 +75,15 @@ public class MainActivity extends Activity implements LocationListener {
         TextView tvLocationUpdates = (TextView) findViewById(R.id.tv_location_updates);
         tvLocationUpdates.setText("Updates...");
 
-        // Sanity check that wifi is enabled, otherwise what's the point?
+        // Sanity check: do we have wifi on the device?
         WifiManager wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        if (wifi == null) {
+            Toast.makeText(this, "This device has no WiFi! What are you doing?!", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        
+        // Sanity check: is wifi enabled? Otherwise what's the point?
         if (! wifi.isWifiEnabled()) {
             Toast.makeText(this, "Your WiFi is disabled! Enabling it now...", Toast.LENGTH_LONG).show();
             wifi.setWifiEnabled(true);
@@ -122,6 +126,7 @@ public class MainActivity extends Activity implements LocationListener {
         if (networkReceiver != null) {
             this.unregisterReceiver(networkReceiver);
         }
+        networkReceiver = null;
     }
 
 	@Override
@@ -160,8 +165,9 @@ public class MainActivity extends Activity implements LocationListener {
 		if (myLocation == null) {
 	        // TODO: make a loader screen for while hotspots load
 	        //setContentView(R.layout.?);
-	        
-			hotspots = databaseHelper.getAllHotspots();
+
+			hotspots = databaseHelper.getHotspotsByLocation(location, MAX_DB_HOTSPOT_DISTANCE);
+			Log.d(TAG, "Found " + hotspots.size() + " hotspots within " + MAX_DB_HOTSPOT_DISTANCE + "m");
 	        networkReceiver.updateHotspots(hotspots);
 	        myRadarView = new RadarView(this, hotspots);
 	        

@@ -19,15 +19,16 @@ import android.widget.TextView;
 public class RadarView extends View implements OnTouchListener {
 
 	protected final String TAG = "NoFi_RadarView";
-	
+
 	static final float DEFAULT_REAL_RADIUS_LENGTH = 300;
+	static final float MAX_BEARING_CHANGE = 30;
 	
 	private Context context;
 	private Location myLocation;
 	private List<Location> myLocations;
 	private List<Hotspot> hotspots;
 	private Paint mPaintGreen, mPaintRed, mPaintYellow;
-	private float width, height, radiusPixels, radiusMeters, myBearing;
+	private float width, height, radiusPixels, radiusMeters, myBearing, myLastBearing;
 	
 
 	public RadarView(Context context, List<Hotspot> hotspots) {
@@ -48,6 +49,7 @@ public class RadarView extends View implements OnTouchListener {
         
         myLocations = new ArrayList<Location>();
         myBearing = 0;
+        myLastBearing = -1;
 	}
 	
 	private void drawInit() {
@@ -204,13 +206,32 @@ public class RadarView extends View implements OnTouchListener {
         }
     }
     
+    public void updateHotspots(List<Hotspot> hotspots) {
+    	this.hotspots = hotspots;
+    	invalidate();
+    }
+    
     public void updateMyLocation(Location location) {
-    	if (myLocation != null) {
-    		myBearing = myLocation.bearingTo(location);
-    		if (myBearing < 0) {
-    			myBearing += 360;
-    		}
-    	}
+    	// TODO: this bearing stuff
+//    	if (myLocation != null) {
+//    		myBearing = myLocation.bearingTo(location);
+//    		if (myBearing < 0) {
+//    			myBearing += 360;
+//    		}
+//
+//    		// TODO: Soften the bearing change
+//    		if (myLastBearing != -1) {
+//    			float bearingClockwise = myLastBearing - myBearing;
+//    			if (bearingClockwise < 0) {
+//    				bearingClockwise += 360;
+//    			}
+//    			float bearingCounterClockwise = myBearing - myLastBearing;
+//    			if (bearingCounterClockwise < 0) {
+//    				bearingCounterClockwise += 360;
+//    			}
+//    		}
+//    		myLastBearing = myBearing;
+//    	}
     	myLocation = location;
     	myLocations.add(location);
     	this.invalidate();

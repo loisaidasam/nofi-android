@@ -29,6 +29,9 @@ public class NetworkReceiver extends BroadcastReceiver {
 	 * http://developer.android.com/reference/android/net/wifi/WifiInfo.html
 	 * (note: getBSSID() is MAC address of router, getMacAddress() is MAC address of phone
 	 * 
+	 * Wifi connected:
+	 * http://stackoverflow.com/questions/5888502/android-wifi-how-to-detect-when-wifi-connection-has-been-established
+	 * 
 	 * Scan wifi's (and turn it on) programatically:
 	 * http://stackoverflow.com/questions/5452940/how-can-i-get-android-wifi-scan-results-into-a-list
 	 * 
@@ -60,6 +63,12 @@ public class NetworkReceiver extends BroadcastReceiver {
 	public void updateMyWifis() {
 		myWifis.clear();
 		WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+		
+		// No wifi available
+		if (wifi == null) {
+			return;
+		}
+		
         List<WifiConfiguration> wifiConfigList = wifi.getConfiguredNetworks();
         for (WifiConfiguration wifiConfig : wifiConfigList) {
         	// Turn "abcd" into abcd (get rid of the wrapping quotes)
@@ -77,32 +86,81 @@ public class NetworkReceiver extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.d(TAG, "onReceive()");
-		
-		String intentAction = intent.getAction();
-		Log.d(TAG, "intentAction: " + intentAction);
+		final String intentAction = intent.getAction();
+		Log.d(TAG, "onReceive() intentAction: " + intentAction);
 		
 		if (! readyForUpdates || intentAction == null) {
 			return;
 		}
 		
-		// Connectivity changed - maybe it's WiFi!
+		// Wifi connected!
 		if (intentAction.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
-			updateMyWifis();
+			NetworkInfo networkInfo = (NetworkInfo) intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
 			
-		    ConnectivityManager conn = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-		    NetworkInfo networkInfo = conn.getActiveNetworkInfo();
-		    if (networkInfo != null && networkInfo.getType() == ConnectivityManager.TYPE_WIFI && networkInfo.isConnected()) {
-		    	WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-		    	WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-		    	if (wifiInfo != null) {
-		    		Log.d(TAG, "Connected to WiFi: " + wifiInfo.toString());
-		    		//Log.d(TAG, "BSSID: " + wifiInfo.getBSSID());
-		    		//Log.d(TAG, "SSID: " + wifiInfo.getSSID());
-		    		//Log.d(TAG, "String: " + wifiInfo.toString());
-		    	}
-		    }
-		    return;
+			// Not a wifi connection
+			if (networkInfo.getType() != ConnectivityManager.TYPE_WIFI) {
+				return;
+			}
+			
+			// Not connected (maybe dropped?)
+			if (! networkInfo.isConnected()) {
+				return;
+			}
+			
+	    	WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+	    	
+	    	// No wifi
+	    	if (wifiManager == null) {
+	    		return;
+	    	}
+	    	
+	    	updateMyWifis();
+	    	
+	    	// No connection info
+	    	WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+	    	if (wifiInfo == null) {
+	    		return;
+	    	}
+    		
+    		Log.d(TAG, "Connected to WiFi: " + wifiInfo.toString());
+    		//Log.d(TAG, "BSSID: " + wifiInfo.getBSSID());
+    		//Log.d(TAG, "SSID: " + wifiInfo.getSSID());
+    		//Log.d(TAG, "String: " + wifiInfo.toString());
+    		
+    		boolean addNetwork = false;
+    		
+    		String ssid = wifiInfo.getSSID();
+    		String macAddress = wifiInfo.getBSSID();
+    		
+    		if (! hotspotMap.containsKey(ssid)) {
+    			addNetwork = true;
+    		} else {
+    			Hotspot hotspot = hotspotMap.get(ssid);
+    			if (! hotspot.macAddress.equals(macAddress)){
+	    			addNetwork = true;
+    			}
+    		}
+    		
+    		if (addNetwork) {
+	    		// Build out a dialog
+				AlertDialog.Builder builder = new AlertDialog.Builder(context);
+				builder.setTitle("Add/update a hotspot?");
+				String message = "You just joined network \"" + ssid + "\"\n\n";
+				message += "Would you like to add this to the list of available hotspots so you can find it again in the future?";
+				builder.setMessage(message);
+	    		
+	    		Log.d(TAG, "Asking to save...");
+				builder.setPositiveButton("Sure!", new WifiAddOnClickListener(context, ssid, macAddress));
+				builder.setNegativeButton("Nah", new DialogInterface.OnClickListener() {
+		            public void onClick(DialogInterface dialog, int which) {
+		            	dialog.cancel();
+		            }
+				});
+				
+				AlertDialog alertDialog = builder.create();
+				alertDialog.show();
+    		}
+			return;
 		}
 		
 		// WiFi scan complete
@@ -112,6 +170,12 @@ public class NetworkReceiver extends BroadcastReceiver {
 			}
 			
 			WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+			
+			// No wifi
+			if (wifi == null) {
+				return;
+			}
+			
 		    List<ScanResult> results = wifi.getScanResults();
 		    Log.d(TAG, results.size() + " scan results available!");
 		    for (ScanResult result : results) {
@@ -138,6 +202,7 @@ public class NetworkReceiver extends BroadcastReceiver {
 					
 					AlertDialog alertDialog = builder.create();
 					alertDialog.show();
+					break;
 		    	}
 		    }
 		    
