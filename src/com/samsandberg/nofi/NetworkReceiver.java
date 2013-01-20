@@ -83,6 +83,63 @@ public class NetworkReceiver extends BroadcastReceiver {
 			hotspotMap.put(hotspot.ssid, hotspot);
 		}
 	}
+	
+	public void checkForNewWifiConnection() {
+    	WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+    	
+    	// No wifi
+    	if (wifiManager == null) {
+    		return;
+    	}
+    	
+    	updateMyWifis();
+    	
+    	// No connection info
+    	WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+    	if (wifiInfo == null) {
+    		return;
+    	}
+		
+		Log.d(TAG, "Connected to WiFi: " + wifiInfo.toString());
+		//Log.d(TAG, "BSSID: " + wifiInfo.getBSSID());
+		//Log.d(TAG, "SSID: " + wifiInfo.getSSID());
+		//Log.d(TAG, "String: " + wifiInfo.toString());
+		
+		boolean addNetwork = false;
+		
+		String ssid = wifiInfo.getSSID();
+		String macAddress = wifiInfo.getBSSID();
+		
+		if (! hotspotMap.containsKey(ssid)) {
+			addNetwork = true;
+		} else {
+			Hotspot hotspot = hotspotMap.get(ssid);
+			if (! hotspot.macAddress.equals(macAddress)){
+    			addNetwork = true;
+			}
+		}
+		
+		if (! addNetwork) {
+			return;
+		}
+		// Build out a dialog
+		AlertDialog.Builder builder = new AlertDialog.Builder(context);
+		builder.setTitle("Add/update a hotspot?");
+		String message = "You just joined network \"" + ssid + "\"\n\n";
+		message += "Would you like to add this to the list of available hotspots so you can find it again in the future?";
+		builder.setMessage(message);
+		
+		Log.d(TAG, "Asking to save...");
+		builder.setPositiveButton("Sure!", new WifiAddOnClickListener(context, ssid, macAddress));
+		builder.setNegativeButton("Nah", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+            	dialog.cancel();
+            }
+		});
+		
+		AlertDialog alertDialog = builder.create();
+		alertDialog.show();
+	}
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
@@ -107,59 +164,8 @@ public class NetworkReceiver extends BroadcastReceiver {
 				return;
 			}
 			
-	    	WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-	    	
-	    	// No wifi
-	    	if (wifiManager == null) {
-	    		return;
-	    	}
-	    	
-	    	updateMyWifis();
-	    	
-	    	// No connection info
-	    	WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-	    	if (wifiInfo == null) {
-	    		return;
-	    	}
-    		
-    		Log.d(TAG, "Connected to WiFi: " + wifiInfo.toString());
-    		//Log.d(TAG, "BSSID: " + wifiInfo.getBSSID());
-    		//Log.d(TAG, "SSID: " + wifiInfo.getSSID());
-    		//Log.d(TAG, "String: " + wifiInfo.toString());
-    		
-    		boolean addNetwork = false;
-    		
-    		String ssid = wifiInfo.getSSID();
-    		String macAddress = wifiInfo.getBSSID();
-    		
-    		if (! hotspotMap.containsKey(ssid)) {
-    			addNetwork = true;
-    		} else {
-    			Hotspot hotspot = hotspotMap.get(ssid);
-    			if (! hotspot.macAddress.equals(macAddress)){
-	    			addNetwork = true;
-    			}
-    		}
-    		
-    		if (addNetwork) {
-	    		// Build out a dialog
-				AlertDialog.Builder builder = new AlertDialog.Builder(context);
-				builder.setTitle("Add/update a hotspot?");
-				String message = "You just joined network \"" + ssid + "\"\n\n";
-				message += "Would you like to add this to the list of available hotspots so you can find it again in the future?";
-				builder.setMessage(message);
-	    		
-	    		Log.d(TAG, "Asking to save...");
-				builder.setPositiveButton("Sure!", new WifiAddOnClickListener(context, ssid, macAddress));
-				builder.setNegativeButton("Nah", new DialogInterface.OnClickListener() {
-		            public void onClick(DialogInterface dialog, int which) {
-		            	dialog.cancel();
-		            }
-				});
-				
-				AlertDialog alertDialog = builder.create();
-				alertDialog.show();
-    		}
+			checkForNewWifiConnection();
+			
 			return;
 		}
 		

@@ -48,8 +48,6 @@ public class MainActivity extends Activity implements LocationListener {
         
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
-        databaseHelper = new DatabaseHelper(this);
-        
         // Acquire a reference to the system Location Manager
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
@@ -93,6 +91,8 @@ public class MainActivity extends Activity implements LocationListener {
         numUpdates = 0;
         lastWifiScan = 0;
         
+        databaseHelper = new DatabaseHelper(this);
+        
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, MIN_DISTANCE_CHANGE_METERS, this);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, MIN_DISTANCE_CHANGE_METERS, this);
     }
@@ -109,6 +109,9 @@ public class MainActivity extends Activity implements LocationListener {
         	locationManager.removeUpdates(this);
     	}
     	myLocation = null;
+    	
+    	databaseHelper.closeDBs();
+    	databaseHelper = null;
 
 		LinearLayout layout = (LinearLayout) findViewById(R.id.layout_container);
 		if (layout != null) {
@@ -124,7 +127,7 @@ public class MainActivity extends Activity implements LocationListener {
         super.onDestroy();
         // Unregister BroadcastReceiver when app is destroyed.
         if (networkReceiver != null) {
-            this.unregisterReceiver(networkReceiver);
+            unregisterReceiver(networkReceiver);
         }
         networkReceiver = null;
     }
@@ -176,6 +179,9 @@ public class MainActivity extends Activity implements LocationListener {
 			layout.addView(myRadarView, 3, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 			
 			networkReceiver.readyForUpdates = true;
+			
+			// If we find that we are connected to a WiFi network, find out if we should add it!
+			networkReceiver.checkForNewWifiConnection();
 		}
 		myLocation = location;
 		myRadarView.updateMyLocation(myLocation);
