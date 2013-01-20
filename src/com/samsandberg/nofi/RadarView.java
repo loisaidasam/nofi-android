@@ -23,6 +23,9 @@ public class RadarView extends View implements OnTouchListener {
 	static final float DEFAULT_REAL_RADIUS_LENGTH = 300;
 	static final float MAX_BEARING_CHANGE = 30;
 	
+	static final boolean SMOOTH_LOCATION_BY_AVERAGING = true;
+	static final int NUMBER_OF_LOCATIONS_TO_AVERAGE = 3;
+	
 	private Context context;
 	private Location myLocation;
 	private List<Location> myLocations;
@@ -71,6 +74,7 @@ public class RadarView extends View implements OnTouchListener {
         }
         */
 
+        // TODO: it IS an instance of Activity, be more elegant
         if (context instanceof Activity) {
         	Activity activity = (Activity) context;
         	
@@ -212,7 +216,7 @@ public class RadarView extends View implements OnTouchListener {
     }
     
     public void updateMyLocation(Location location) {
-    	// TODO: this bearing stuff
+		// TODO: this bearing stuff
 //    	if (myLocation != null) {
 //    		myBearing = myLocation.bearingTo(location);
 //    		if (myBearing < 0) {
@@ -232,9 +236,25 @@ public class RadarView extends View implements OnTouchListener {
 //    		}
 //    		myLastBearing = myBearing;
 //    	}
+    	
+    	// Average the last few location lat/lon points to try and smooth it out
+    	if (SMOOTH_LOCATION_BY_AVERAGING) {
+	    	double avgLatitude = location.getLatitude();
+	    	double avgLongitude = location.getLongitude();
+	    	int numAveraged = 1;
+	    	for (int i = myLocations.size() - 1; i >= 0 && numAveraged < NUMBER_OF_LOCATIONS_TO_AVERAGE; i--) {
+	    		avgLatitude += myLocations.get(i).getLatitude();
+	    		avgLongitude += myLocations.get(i).getLongitude();
+	    		numAveraged++;
+	    	}
+	    	location.setLatitude(avgLatitude / NUMBER_OF_LOCATIONS_TO_AVERAGE);
+	    	location.setLongitude(avgLongitude / NUMBER_OF_LOCATIONS_TO_AVERAGE);
+    	}
+    	
     	myLocation = location;
     	myLocations.add(location);
-    	this.invalidate();
+    	
+    	invalidate();
     }
 
 	@Override
