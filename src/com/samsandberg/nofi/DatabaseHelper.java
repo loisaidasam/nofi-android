@@ -201,6 +201,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 		if (cursor.getInt(3) == 1) {
 			hotspot.setPassword(cursor.getString(2));
 		}
+		hotspot.setFoursquareInfo(cursor.getString(7), cursor.getString(8), cursor.getString(9));
 		return hotspot;
 	}
 	

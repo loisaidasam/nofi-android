@@ -30,7 +30,7 @@ public class RadarView extends View implements OnTouchListener {
 	private Location myLocation;
 	private List<Location> myLocations;
 	private List<Hotspot> hotspots;
-	private Paint mPaintGreen, mPaintRed, mPaintYellow;
+	private Paint mPaintBlue, mPaintGreen, mPaintRed, mPaintYellow;
 	private float width, height, radiusPixels, radiusMeters, myBearing, myLastBearing;
 	
 
@@ -38,6 +38,9 @@ public class RadarView extends View implements OnTouchListener {
 		super(context);
 		this.context = context;
 		this.hotspots = hotspots;
+        
+        mPaintBlue = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mPaintBlue.setColor(Color.BLUE);
 
         mPaintGreen = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaintGreen.setColor(Color.GREEN);
@@ -157,6 +160,12 @@ public class RadarView extends View implements OnTouchListener {
 	}
 	*/
 	
+	private void drawMyAccuracy(Canvas canvas) {
+		//Log.d(TAG, "drawMyAccuracy()");
+		float radius = radiusPixels * myLocation.getAccuracy() / radiusMeters;
+		canvas.drawCircle(width/2, height/2, radius, mPaintBlue);
+	}
+	
 	private void drawNorth(Canvas canvas) {
 		//Log.d(TAG, "drawNorth()");
 		
@@ -199,6 +208,7 @@ public class RadarView extends View implements OnTouchListener {
         
         drawInit();
 
+        drawMyAccuracy(canvas);
         drawAxes(canvas);
         drawMyPath(canvas);
         //drawMe(canvas);
@@ -289,8 +299,12 @@ public class RadarView extends View implements OnTouchListener {
 				}
 				message += "Bearing: " + bearing + " degrees\n";
 				
-				for (String note : hotspot.notes) {
-					message += "\n" + note + "\n";
+				if (hotspot.notes.size() > 0) {
+					message += "\nNotes:";
+					
+					for (String note : hotspot.notes) {
+						message += "\n\n" + note;
+					}	
 				}
 				
 				alertDialogBuilder.setMessage(message);
