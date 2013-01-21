@@ -1,10 +1,12 @@
 package com.samsandberg.nofi;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.location.Location;
-import android.util.Log;
 
 public class Hotspot extends Location {
 
@@ -14,17 +16,19 @@ public class Hotspot extends Location {
 	
 	public String ssid, password, macAddress, foursquareId, foursquareName, foursquareType;
 	public boolean passwordProtected;
+	public List<String> notes;
+	
 	public float x, y;
 	
 	protected Paint mPaintGreen;
 	
-	public Hotspot(String ssid, String macAddress, double latitude, double longitude) {
+	public Hotspot(double latitude, double longitude) {
 		super("foo");
-		this.ssid = ssid;
-		this.macAddress = macAddress;
 		this.setLatitude(latitude);
 		this.setLongitude(longitude);
-		
+
+		this.ssid = "";
+		this.macAddress = "";
 		this.password = "";
 		this.passwordProtected = false;
 
@@ -32,19 +36,40 @@ public class Hotspot extends Location {
 		this.foursquareName = "";
 		this.foursquareType = "";
 		
+		notes = new ArrayList<String>();
+		
         mPaintGreen = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaintGreen.setColor(Color.GREEN);
 	}
 	
-	public void setPassword(String password) {
-		passwordProtected = true;
-		this.password = password;
+	public Hotspot setWifiInfo(String ssid, String macAddress) {
+		this.ssid = ssid;
+		this.macAddress = macAddress;
+		return this;
 	}
 	
-	public void setFoursquareInfo(String foursquareId, String foursquareName, String foursquareType) {
+	public Hotspot setPassword(String password) {
+		passwordProtected = true;
+		this.password = password;
+		return this;
+	}
+	
+	public Hotspot setNoPassword() {
+		password = "";
+		passwordProtected = false;
+		return this;
+	}
+	
+	public Hotspot setFoursquareInfo(String foursquareId, String foursquareName, String foursquareType) {
 		this.foursquareId = foursquareId;
 		this.foursquareName = foursquareName;
 		this.foursquareType = foursquareType;
+		return this;
+	}
+	
+	public Hotspot addNote(String note) {
+		notes.add(note);
+		return this;
 	}
 	
 	public void draw(Canvas canvas) {

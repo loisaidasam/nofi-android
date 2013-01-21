@@ -161,7 +161,7 @@ public class RadarView extends View implements OnTouchListener {
 		//Log.d(TAG, "drawNorth()");
 		
 		// Use real north pole?
-		Hotspot northPole = new Hotspot("North Pole", "", 90, 0);
+		Hotspot northPole = new Hotspot(90, 0);
 		FloatPoint northPolePoint = prepareRelativeLocation(myLocation, northPole);
 		float x = northPolePoint.x;
 		float y = northPolePoint.y;
@@ -275,6 +275,12 @@ public class RadarView extends View implements OnTouchListener {
 				} else {
 					message += "Open (no password)\n";
 				}
+				
+				if (! hotspot.foursquareId.equals("")) {
+					message += "4Sq Venue Name: " + hotspot.foursquareName + "\n";
+					message += "4Sq Venue Type: " + hotspot.foursquareType + "\n";
+				}
+				
 				message += "Distance: " + myLocation.distanceTo(hotspot) + "m\n";
 				float bearing = myLocation.bearingTo(hotspot);
 				bearing -= myBearing;
@@ -282,6 +288,11 @@ public class RadarView extends View implements OnTouchListener {
 					bearing += 360;
 				}
 				message += "Bearing: " + bearing + " degrees\n";
+				
+				for (String note : hotspot.notes) {
+					message += "\n" + note + "\n";
+				}
+				
 				alertDialogBuilder.setMessage(message);
 				AlertDialog alertDialog = alertDialogBuilder.create();
 				alertDialog.show();

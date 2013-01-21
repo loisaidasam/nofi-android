@@ -93,6 +93,10 @@ public class MainActivity extends Activity implements LocationListener {
         
         databaseHelper = new DatabaseHelper(this);
         
+        // While setting up DB...
+        //databaseHelper.resetDatabase();
+        //databaseHelper.insertSampleDataLjubljana();
+        
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, MIN_DISTANCE_CHANGE_METERS, this);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, MIN_DISTANCE_CHANGE_METERS, this);
     }
@@ -110,7 +114,6 @@ public class MainActivity extends Activity implements LocationListener {
     	}
     	myLocation = null;
     	
-    	databaseHelper.closeDBs();
     	databaseHelper = null;
 
 		LinearLayout layout = (LinearLayout) findViewById(R.id.layout_container);

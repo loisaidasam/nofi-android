@@ -118,15 +118,15 @@ public class WifiAddActivity extends Activity implements OnClickListener, OnItem
 		macAddress = (EditText) findViewById(R.id.wifiadd_mac_address);
 		String macAddressStr = macAddress.getText().toString();
 		
-		Hotspot hotspot = new Hotspot(ssidStr, macAddressStr, myLocation.getLatitude(), myLocation.getLongitude());
+		Hotspot hotspot = new Hotspot(myLocation.getLatitude(), myLocation.getLongitude());
+		hotspot.setWifiInfo(ssidStr, macAddressStr);
 		
 		passwordProtected = (Spinner) findViewById(R.id.wifiadd_password_protected);
 		if (passwordProtected.getSelectedItem().toString().equals("Yes")) {
-			hotspot.passwordProtected = true;
 			password = (EditText) findViewById(R.id.wifiadd_password);
-			hotspot.password = password.getText().toString();
+			hotspot.setPassword(password.getText().toString());
 		} else {
-			hotspot.passwordProtected = false;
+			hotspot.setNoPassword();
 		}
 		
 		long lastConnected = System.currentTimeMillis();
